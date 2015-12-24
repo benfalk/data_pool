@@ -4,7 +4,6 @@ defmodule DataPoolTest do
 
   setup do
     {:ok, data} = DataPool.start_link
-    #on_exit(fn -> GenServer.stop(data) end)
     {:ok, pid: data}
   end
     
@@ -39,5 +38,17 @@ defmodule DataPoolTest do
     end
     11..20 |> Enum.each(&DataPool.push(context.pid, &1))
     assert Task.await(task) == 11..20 |> Enum.to_list 
+  end
+
+  test "with a size of zero, when changed it should empty", context do
+    DataPool.update_max_size(context.pid, 0)
+    task = Task.async fn ->
+      1..3 |> Enum.map(fn _ -> DataPool.pop(context.pid) end)
+    end
+    Task.async fn ->
+      1..3 |> Enum.each(fn x -> DataPool.push(context.pid, x) end)
+    end
+    DataPool.update_max_size(context.pid, 1)
+    assert Task.await(task) == [1, 2, 3]
   end
 end

@@ -42,6 +42,37 @@ defmodule DataPool do
 
 
   @doc """
+  Returns the maximum amount of items that can be added to the pool before
+  calls to `push` are blocked
+
+  ## Example
+
+      iex> {:ok, pid} = DataPool.start_link
+      iex> DataPool.max_size(pid)
+      20
+  """
+  @spec max_size(pid) :: pos_integer
+  def max_size(pid), do: GenServer.call(pid, :max_size)
+
+
+
+  @doc """
+  Dynamically changes the maximum size the pool will hold before producers
+  are blocked
+
+  ## Examples
+
+      iex> {:ok, pid} = DataPool.start_link
+      iex> DataPool.update_max_size(pid, 243)
+      iex> DataPool.max_size(pid)
+      243
+  """
+  @spec update_max_size(pid, pos_integer) :: :ok
+  def update_max_size(pid, size), do: GenServer.call(pid, {:update_max_size, size})
+
+
+
+  @doc """
   Add an item to the pool to be processed by a consumer.  If the pool is at it's
   max limit this operation will block and wait until there is room available.
 
@@ -139,5 +170,48 @@ defmodule DataPool do
   @doc false
   def handle_call(:stop, _, state) do
     {:stop, :normal, :ok, state}
+  end
+
+
+  @doc false
+  def handle_call(:max_size, _, state), do: {:reply, state.max_size, state}
+
+
+  @doc false
+  def handle_call({:update_max_size, size}, _, state=%DataPool{producers: @empty_queue}) do
+    {:reply, :ok, %DataPool{ state |> notify_any_consumers | max_size: size }}
+  end
+  def handle_call({:update_max_size, size}, _, state=%DataPool{max_size: current_size}) when size > current_size do
+    new_state = state
+      |> unblock_next_producers(size - current_size)
+      |> notify_any_consumers
+    {:reply, :ok, %DataPool{ new_state | max_size: size }}
+  end
+  def handle_call({:update_max_size, size}, _, state) do
+    {:reply, :ok, %DataPool{ state | max_size: size }}
+  end
+
+
+  @doc false
+  defp notify_any_consumers(state=%DataPool{consumers: @empty_queue}), do: state
+  defp notify_any_consumers(state=%DataPool{data: @empty_queue}), do: state
+  defp notify_any_consumers(state=%DataPool{}) do
+    {:value, consumer, consumers} = Queue.pop(state.consumers)
+    {:value, item, data} = Queue.pop(state.data)
+    GenServer.reply(consumer, item)
+    %DataPool{ state | data: data, consumers: consumers }
+  end
+
+
+  @doc false
+  defp unblock_next_producers(state=%DataPool{producers: @empty_queue}, _), do: state
+  defp unblock_next_producers(state, 0), do: state
+  defp unblock_next_producers(state, amount) do
+    {:value, {pusher, item}, producers} = Queue.pop(state.producers)
+    GenServer.reply(pusher, nil)
+    new_state = %DataPool{ state | producers: producers,
+                                   data: Queue.push(state.data, item),
+                                   size: state.size + 1 }
+    unblock_next_producers(new_state, amount - 1)
   end
 end
