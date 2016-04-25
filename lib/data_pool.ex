@@ -23,6 +23,7 @@ defmodule DataPool do
     max_size: pos_integer
   }
 
+  @type max_timeout :: pos_integer | :infinity
 
 
   @doc """
@@ -96,8 +97,8 @@ defmodule DataPool do
       iex> Task.yield(task, 100)
       {:ok, [nil, nil, nil, nil, nil]}
   """
-  @spec push(pid, any) :: nil
-  def push(pid, item), do: GenServer.call(pid, {:push, item})
+  @spec push(pid, any, max_timeout) :: nil
+  def push(pid, item, timeout \\ 5000), do: GenServer.call(pid, {:push, item}, timeout)
 
 
 
@@ -119,8 +120,8 @@ defmodule DataPool do
       iex> DataPool.pop(pid)
       :it
   """
-  @spec pop(pid) :: any
-  def pop(pid), do: GenServer.call(pid, :pop)
+  @spec pop(pid, max_timeout) :: any
+  def pop(pid, timeout \\ 5000), do: GenServer.call(pid, :pop, timeout)
 
 
 
