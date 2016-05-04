@@ -3,9 +3,11 @@ defmodule DataPool.StreamBuffer do
   Provides a greedy buffer in your stream which can be used to fill
   up data from upstream provider resources.  This is most useful
   when pulling sets from an API or database and want to always keep
-  the IO with the resource busy until you have a significant amount
-  of buffer full to work with.
+  the IO with the resource upstream busy until you have a significant
+  amount of buffer full to work with.
   """
+
+  @type max_timeout :: pos_integer | :infinity
 
 
   def buffer(stream, buffer_size, timeout \\ :infinity) when(buffer_size) > 0 do
@@ -23,8 +25,6 @@ defmodule DataPool.StreamBuffer do
         |> Stream.run
 
         DataPool.push(pool, :stop)
-        DataPool.stop(pool)
-        Agent.stop(agent)
       end)
 
       %{pool: pool, consumer: consumer, agent: agent}
@@ -37,9 +37,11 @@ defmodule DataPool.StreamBuffer do
       end
     end
 
-    after_fun = fn %{consumer: consumer, agent: agent} ->
+    after_fun = fn %{consumer: consumer, agent: agent, pool: pool} ->
       Agent.update(agent, fn _ -> false end)
-      Task.await(consumer)
+      Task.await(consumer, timeout)
+      DataPool.stop(pool)
+      Agent.stop(agent)
     end
 
     Stream.resource(start_fun, next_fun, after_fun)
