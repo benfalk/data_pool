@@ -1,6 +1,7 @@
 defmodule DataPoolTest do
   use ExUnit.Case, async: true
   doctest DataPool
+  doctest Collectable.DataPool
 
   setup do
     {:ok, data} = DataPool.start_link

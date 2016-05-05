@@ -8,13 +8,18 @@ defmodule DataPool do
   alias DataPool.State
   alias EQueue, as: Queue
   use GenServer
+  import GenServer, only: [call: 2, call: 3]
   @empty_queue Queue.new
-
-  defstruct pid: nil
-
-  @type t :: %__MODULE__{pid: pid}
-
   @type max_timeout :: pos_integer | :infinity
+
+  defstruct pid: nil,
+            default_timeout: :infinity
+
+  @type t :: %__MODULE__{
+    pid: pid,
+    default_timeout: max_timeout
+  }
+
 
   @doc """
   Returns the tuple `{:ok, %DataPool{}}` with a live pid queue that
@@ -48,7 +53,7 @@ defmodule DataPool do
       20
   """
   @spec max_size(t) :: pos_integer
-  def max_size(%__MODULE__{pid: pid}), do: GenServer.call(pid, :max_size)
+  def max_size(%__MODULE__{pid: pid}), do: call(pid, :max_size)
 
 
 
@@ -64,7 +69,7 @@ defmodule DataPool do
       243
   """
   @spec update_max_size(t, pos_integer) :: :ok
-  def update_max_size(%__MODULE__{pid: pid}, size), do: GenServer.call(pid, {:update_max_size, size})
+  def update_max_size(%__MODULE__{pid: pid}, size), do: call(pid, {:update_max_size, size})
 
 
 
@@ -93,7 +98,8 @@ defmodule DataPool do
       {:ok, [nil, nil, nil, nil, nil]}
   """
   @spec push(t, any, max_timeout) :: nil
-  def push(%__MODULE__{pid: pid}, item, timeout \\ 5000), do: GenServer.call(pid, {:push, item}, timeout)
+  def push(%__MODULE__{pid: pid}, item, timeout), do: call(pid, {:push, item}, timeout)
+  def push(pool=%__MODULE__{}, item), do: push(pool, item, pool.default_timeout)
 
 
 
@@ -116,7 +122,8 @@ defmodule DataPool do
       :it
   """
   @spec pop(t, max_timeout) :: any
-  def pop(%__MODULE__{pid: pid}, timeout \\ 5000), do: GenServer.call(pid, :pop, timeout)
+  def pop(%__MODULE__{pid: pid}, timeout), do: call(pid, :pop, timeout)
+  def pop(pool=%__MODULE__{}), do: pop(pool, pool.default_timeout)
 
 
 
@@ -130,7 +137,7 @@ defmodule DataPool do
       :ok
   """
   @spec stop(t) :: :ok
-  def stop(%__MODULE__{pid: pid}), do: GenServer.call(pid, :stop)
+  def stop(%__MODULE__{pid: pid}), do: call(pid, :stop)
 
   @doc """
   Returns the amount of items in the pool
@@ -147,7 +154,7 @@ defmodule DataPool do
       0
   """
   @spec size(t) :: pos_integer
-  def size(%__MODULE__{pid: pid}), do: GenServer.call(pid, :size)
+  def size(%__MODULE__{pid: pid}), do: call(pid, :size)
 
 
   @doc false
