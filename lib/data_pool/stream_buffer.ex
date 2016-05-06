@@ -12,16 +12,15 @@ defmodule DataPool.StreamBuffer do
 
   def buffer(stream, buffer_size, timeout \\ :infinity) when(buffer_size) > 0 do
     start_fun = fn ->
-      {:ok, pool} = DataPool.start_link
+      pool = build_pool(buffer_size, timeout)
       {:ok, agent} = Agent.start_link(fn -> true end)
-      DataPool.update_max_size(pool, buffer_size)
 
       consumer = Task.async(fn ->
         stream
         |> Stream.transform(agent, fn i, a ->
           if Agent.get(a, &(&1)), do: {[i], a}, else: {:halt, a}
         end)
-        |> Stream.each(fn i -> DataPool.push(pool, {:item, i}, timeout) end)
+        |> Stream.each(fn i -> DataPool.push(pool, {:item, i}) end)
         |> Stream.run
 
         DataPool.push(pool, :stop)
@@ -31,9 +30,9 @@ defmodule DataPool.StreamBuffer do
     end
 
     next_fun = fn %{pool: pool} = res ->
-      case DataPool.pop(pool, timeout) do
-        {:item, i} -> {[i], res}
-        :stop -> {:halt, res}
+      case DataPool.pop(pool) do
+        {:ok, {:item, i}} -> {[i], res}
+        {:ok, :stop} -> {:halt, res}
       end
     end
 
@@ -45,5 +44,11 @@ defmodule DataPool.StreamBuffer do
     end
 
     Stream.resource(start_fun, next_fun, after_fun)
+  end
+
+  defp build_pool(size, timeout) do
+    {:ok, pool} = DataPool.start_link
+    DataPool.update_max_size(pool, size)
+    %{ pool | default_timeout: timeout }
   end
 end

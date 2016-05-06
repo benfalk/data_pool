@@ -9,13 +9,17 @@ defmodule DataPool.State do
             producers: @empty_queue,
             data: @empty_queue,
             size: 0,
-            max_size: 20
+            max_size: 20,
+            status: :ok
   
+  @type status :: :ok | :done | :halt
+
   @type t :: %__MODULE__{
     consumers: Queue.t,
     producers: Queue.t,
     data: Queue.t,
     size: pos_integer,
-    max_size: pos_integer
+    max_size: pos_integer,
+    status: status
   }
 end
