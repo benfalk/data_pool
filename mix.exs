@@ -3,8 +3,10 @@ defmodule DataPool.Mixfile do
 
   def project do
     [app: :data_pool,
-     version: "0.1.0",
+     version: "1.0.0",
      elixir: "~> 1.1",
+     description: description,
+     package: package,
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      deps: deps]
@@ -27,6 +29,26 @@ defmodule DataPool.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:e_queue, "~> 1.0.0"}]
+    [
+      {:e_queue, "~> 1.0.0"},
+      {:earmark, "~> 0.1", only: :dev},
+      {:ex_doc, "~> 0.11", only: :dev}
+    ]
+  end
+
+  defp description do
+    """
+    Utility to buffer items into a queue that follow a simple block
+    pattern on calls to push and pop when the queue at a max size or
+    empty.
+    """
+  end
+
+  defp package do
+    [
+      maintainers: ["Benjamin Falk"],
+      links: %{"GitHub" => "https://github.com/benfalk/data_pool"},
+      licenses: ["MIT License"]
+    ]
   end
 end
