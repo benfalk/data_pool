@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/benfalk/data_pool.svg?branch=master)](https://travis-ci.org/benfalk/data_pool)
+[![Hex Version](https://img.shields.io/hexpm/v/data_pool.svg)](https://hex.pm/packages/data_pool)
+
 # DataPool
 
 A "backpressure" buffer pool that you can push and pop items from.  This
