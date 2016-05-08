@@ -1,6 +1,6 @@
 defmodule DataPool.StreamBufferTest do
   use ExUnit.Case, async: true
-  alias DataPool.StreamBuffer
+  alias DataPool.Buffer, as: StreamBuffer
 
   test "finishing early works" do
     results = 1..100

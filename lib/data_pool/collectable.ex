@@ -13,6 +13,12 @@ defimpl Collectable, for: DataPool do
     DataPool.push(pool, item)
     pool
   end
-  defp into(pool=%DataPool{}, :done), do: pool
-  defp into(_, :halt), do: nil
+  defp into(pool=%DataPool{}, :done) do
+    DataPool.update_status(pool, :done)
+    pool
+  end
+  defp into(pool=%DataPool{}, :halt) do
+    DataPool.update_status(pool, :halt)
+    pool
+  end
 end

@@ -2,6 +2,7 @@ defmodule DataPoolTest do
   use ExUnit.Case, async: true
   doctest DataPool
   doctest Collectable.DataPool
+  doctest DataPool.Buffer
 
   setup do
     {:ok, pool} = DataPool.start_link
@@ -64,5 +65,11 @@ defmodule DataPoolTest do
     DataPool.update_status(pool, :halt)
     assert Task.await(pulls) == [:halt, :halt, :halt]
     assert Task.await(pushes) == [:halt, :halt, :halt]
+  end
+
+  test "pool will return `:done` after all items have been taken after flagged", %{pool: pool} do
+    Enum.each(1..2, &DataPool.push(pool, &1))
+    DataPool.update_status(pool, :done)
+    assert Enum.map(1..3, fn _ -> DataPool.pop(pool) end) == [{:ok, 1}, {:ok, 2}, :done]
   end
 end
