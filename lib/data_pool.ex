@@ -211,7 +211,7 @@ defmodule DataPool do
   def handle_call(:pop, _, state=%State{status: :halt}) do
     {:reply, :halt, state}
   end
-  def handle_call(:pop, consumer, state=%State{status: :done, data: @empty_queue}) do
+  def handle_call(:pop, _, state=%State{status: :done, data: @empty_queue}) do
     {:reply, :done, state}
   end
   def handle_call(:pop, consumer, state=%State{data: @empty_queue}) do
