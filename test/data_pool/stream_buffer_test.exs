@@ -49,4 +49,13 @@ defmodule DataPool.StreamBufferTest do
     assert results == [1, 1, 1, 1, 1]
     assert Agent.get(agent, &(&1)) == :clean
   end
+
+  test "filling up then marking as done doesn't stall" do
+    result = 1..100
+    |> StreamBuffer.buffer(2)
+    |> Stream.take(0)
+    |> Enum.to_list
+
+    assert result == []
+  end
 end

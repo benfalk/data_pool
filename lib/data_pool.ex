@@ -264,20 +264,17 @@ defmodule DataPool do
   @doc false
   def handle_call({:update_status, :halt}, _, state) do
     state.consumers |> Enum.each(&GenServer.reply(&1, :halt))
-    state.producers |> Enum.each(&GenServer.reply(&1, :halt))
-    {:reply, :ok, %State{ state | status: :halt }}
+    state.producers |> Enum.each(&GenServer.reply(elem(&1, 0), :halt))
+    {:reply, :ok, %State{ state | status: :halt, consumers: @empty_queue, producers: @empty_queue }}
   end
   def handle_call({:update_status, :done}, _, state=%State{data: @empty_queue}) do
     state.consumers |> Enum.each(&GenServer.reply(&1, :done))
-    state.producers |> Enum.each(&GenServer.reply(&1, :done))
-    {:reply, :ok, %State{ state | status: :done }}
+    state.producers |> Enum.each(&GenServer.reply(elem(&1, 0), :done))
+    {:reply, :ok, %State{ state | status: :done, consumers: @empty_queue, producers: @empty_queue }}
   end
   def handle_call({:update_status, :done}, _, state) do
-    state.producers |> Enum.each(&GenServer.reply(&1, :done))
-    {:reply, :ok, %State{ state | status: :done }}
-  end
-  def handle_call({:update_status, status}, _, state) do
-    {:reply, :ok, %State{ state | status: status }}
+    state.producers |> Enum.each(&GenServer.reply(elem(&1, 0), :done))
+    {:reply, :ok, %State{ state | status: :done, producers: @empty_queue }}
   end
 
 

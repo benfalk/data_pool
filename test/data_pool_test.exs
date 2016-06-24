@@ -72,4 +72,15 @@ defmodule DataPoolTest do
     DataPool.update_status(pool, :done)
     assert Enum.map(1..3, fn _ -> DataPool.pop(pool) end) == [{:ok, 1}, {:ok, 2}, :done]
   end
+
+  test "filling up the buffer, then marking as done alerts consumer", %{pool: pool} do
+    DataPool.update_max_size(pool, 2)
+    task = Task.async fn ->
+      1..3 |> Enum.map(&DataPool.push(pool, &1))
+    end
+    :timer.sleep 20
+    DataPool.update_status(pool, :done)
+    results = Task.await(task)
+    assert results == [:ok, :ok, :done]
+  end
 end
